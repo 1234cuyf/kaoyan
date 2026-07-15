@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    exclude: ["**/node_modules/**", "**/.next/**", "**/.worktrees/**", "**/out/**"],
     setupFiles: ["./vitest.setup.ts"],
     css: true,
   },
