@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { insertApplication } from "./application-repository";
+import { insertApplication, normalizeSessionPoolUrl } from "./application-repository";
 import type { ApplicationInsert } from "./application-input";
 
 const input: ApplicationInsert = {
@@ -37,5 +37,19 @@ describe("insertApplication", () => {
   it("rejects an insert response without an id", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     await expect(insertApplication(input, { query })).rejects.toThrow("数据库未返回登记记录 ID");
+  });
+});
+
+describe("normalizeSessionPoolUrl", () => {
+  it("adds libpq compatibility for Supabase Session Pool SSL URLs", () => {
+    const url = "postgresql://postgres.project:password@aws-0-region.pooler.supabase.com:5432/postgres?sslmode=require";
+
+    expect(normalizeSessionPoolUrl(url)).toBe(`${url}&uselibpqcompat=true`);
+  });
+
+  it("does not duplicate the libpq compatibility flag", () => {
+    const url = "postgresql://postgres.project:password@aws-0-region.pooler.supabase.com:5432/postgres?sslmode=require&uselibpqcompat=true";
+
+    expect(normalizeSessionPoolUrl(url)).toBe(url);
   });
 });

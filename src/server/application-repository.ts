@@ -7,6 +7,17 @@ export interface Queryable {
 
 const globalForDatabase = globalThis as typeof globalThis & { yantikuPool?: Pool };
 
+export function normalizeSessionPoolUrl(connectionString: string): string {
+  if (!connectionString.includes("pooler.supabase.com") || !connectionString.includes("sslmode=require")) {
+    return connectionString;
+  }
+  if (connectionString.includes("uselibpqcompat=true")) {
+    return connectionString;
+  }
+
+  return `${connectionString}${connectionString.includes("?") ? "&" : "?"}uselibpqcompat=true`;
+}
+
 function getDatabase(): Queryable {
   const connectionString = process.env.SUPABASE_POSTGRES_SESSION_POOL_URL;
   if (!connectionString) {
@@ -14,7 +25,7 @@ function getDatabase(): Queryable {
   }
 
   if (!globalForDatabase.yantikuPool) {
-    globalForDatabase.yantikuPool = new Pool({ connectionString });
+    globalForDatabase.yantikuPool = new Pool({ connectionString: normalizeSessionPoolUrl(connectionString) });
   }
   return globalForDatabase.yantikuPool as unknown as Queryable;
 }
