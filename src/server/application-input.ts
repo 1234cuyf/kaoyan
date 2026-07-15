@@ -1,11 +1,18 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
 
-const scrypt = promisify(scryptCallback);
 const SCRYPT_COST = 16_384;
 const SCRYPT_BLOCK_SIZE = 8;
 const SCRYPT_PARALLELIZATION = 1;
 const DIGEST_LENGTH = 64;
+
+function deriveKey(password: string, salt: Buffer, length: number, options: { N: number; r: number; p: number }): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scryptCallback(password, salt, length, options, (error, derivedKey) => {
+      if (error) reject(error);
+      else resolve(derivedKey);
+    });
+  });
+}
 
 export interface ApplicationInsert {
   name: string;
@@ -78,11 +85,11 @@ export function parseApplicationInput(value: unknown, expectedAccessKey: string)
 
 export async function hashAccessKey(accessKey: string): Promise<string> {
   const salt = randomBytes(16);
-  const digest = await scrypt(accessKey, salt, DIGEST_LENGTH, {
+  const digest = await deriveKey(accessKey, salt, DIGEST_LENGTH, {
     N: SCRYPT_COST,
     r: SCRYPT_BLOCK_SIZE,
     p: SCRYPT_PARALLELIZATION,
-  }) as Buffer;
+  });
   return [
     "scrypt",
     SCRYPT_COST,
@@ -105,7 +112,7 @@ export async function verifyAccessKeyHash(accessKey: string, encoded: string): P
   try {
     const expected = Buffer.from(digestValue, "base64url");
     if (expected.length !== DIGEST_LENGTH) return false;
-    const actual = await scrypt(accessKey, Buffer.from(saltValue, "base64url"), expected.length, { N, r, p }) as Buffer;
+    const actual = await deriveKey(accessKey, Buffer.from(saltValue, "base64url"), expected.length, { N, r, p });
     return timingSafeEqual(actual, expected);
   } catch {
     return false;
