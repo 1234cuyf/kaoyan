@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { DEMO_ACCESS_KEY, validateAccess } from "@/lib/core";
+import { validateAccessFields } from "@/lib/core";
 import type { AccessFormData } from "@/lib/types";
 
 interface AccessGateProps {
@@ -11,13 +11,34 @@ interface AccessGateProps {
 export function AccessGate({ onLogin }: AccessGateProps) {
   const [error, setError] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     const values = Object.fromEntries(new FormData(event.currentTarget)) as unknown as AccessFormData;
-    const result = validateAccess(values);
+    const result = validateAccessFields(values);
     setError(result.message);
-    if (result.ok) onLogin(values);
+    if (!result.ok) return;
+
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/kaoyan-applications", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const payload = await response.json().catch(() => null) as { message?: unknown } | null;
+      if (!response.ok) {
+        setError(typeof payload?.message === "string" ? payload.message : "登记失败，请稍后重试");
+        return;
+      }
+      onLogin(values);
+    } catch {
+      setError("登记失败，请检查网络后重试");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -33,7 +54,7 @@ export function AccessGate({ onLogin }: AccessGateProps) {
             <div className="story-points">
               <div className="story-point">按院校、科目、年份快速检索</div>
               <div className="story-point">重点真题随手收藏，进度更连贯</div>
-              <div className="story-point">纯静态演示，信息仅保存在本机</div>
+              <div className="story-point">安全登记备考方向，访问密钥不会明文保存</div>
             </div>
           </div>
           <p className="gate-foot">研题库 · 为认真准备的每一天</p>
@@ -78,15 +99,17 @@ export function AccessGate({ onLogin }: AccessGateProps) {
                   <input id="accessKey" name="accessKey" type={showKey ? "text" : "password"} autoComplete="off" placeholder="请输入访问密钥" required />
                   <button className="key-toggle" type="button" onClick={() => setShowKey((value) => !value)} aria-label={showKey ? "隐藏密钥" : "显示密钥"}>{showKey ? "隐藏" : "显示"}</button>
                 </div>
-                <div className="key-hint"><span>静态演示无需真实授权</span><span>演示密钥：<span className="demo-key">{DEMO_ACCESS_KEY}</span></span></div>
+                <div className="key-hint"><span>访问密钥仅用于服务端验证</span><span>不会以明文保存</span></div>
               </div>
               <div className="field field-full">
                 <p className="form-error" role="alert" aria-live="polite">{error}</p>
-                <button className="primary-btn access-submit" type="submit">验证并进入题库 <span aria-hidden="true">→</span></button>
+                <button disabled={submitting} className="primary-btn access-submit" type="submit">
+                  {submitting ? "正在登记…" : <>验证并进入题库 <span aria-hidden="true">→</span></>}
+                </button>
               </div>
             </div>
           </form>
-          <p className="privacy-note">提交即表示你了解：本页面为静态演示，所填信息仅存于当前浏览器。</p>
+          <p className="privacy-note">提交后，备考登记信息将保存到服务端数据库；访问密钥仅保存不可逆哈希。非密钥资料仍会保存在当前浏览器，用于恢复本地会话。</p>
         </div>
       </div>
     </section>
