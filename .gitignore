@@ -25,6 +25,7 @@ coverage/
 # Editor settings
 .idea/
 .vscode/
+.worktrees/
 *.swp
 *.swo
 
