@@ -1,0 +1,57 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it } from "vitest";
+import { FAVORITES_STORAGE_KEY, USER_STORAGE_KEY } from "@/lib/core";
+import { SessionGate } from "./session-gate";
+
+describe("SessionGate", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("shows the access form when no session is stored", async () => {
+    render(<SessionGate><div>主站内容</div></SessionGate>);
+    expect(await screen.findByRole("heading", { name: "开始你的真题之旅" })).toBeInTheDocument();
+    expect(screen.queryByText("主站内容")).not.toBeInTheDocument();
+    expect(screen.queryByText("WELCOME ABOARD")).not.toBeInTheDocument();
+    expect(screen.queryByText("KAOYAN PAPER ARCHIVE")).not.toBeInTheDocument();
+  });
+
+  it("stores user information without the access key and enters the site", async () => {
+    const user = userEvent.setup();
+    render(<SessionGate><div>主站内容</div></SessionGate>);
+
+    await user.type(await screen.findByLabelText("姓名 *"), "张同学");
+    await user.selectOptions(screen.getByLabelText("考研年份 *"), "2027");
+    await user.type(screen.getByLabelText("当前院校 *"), "湖南大学");
+    await user.type(screen.getByLabelText("目标院校 *"), "武汉大学");
+    await user.type(screen.getByLabelText("报考专业 *"), "计算机科学与技术");
+    await user.type(screen.getByLabelText("访问密钥 *"), "KY2027");
+    await user.click(screen.getByRole("button", { name: /验证并进入题库/ }));
+
+    expect(await screen.findByText("主站内容")).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) ?? "{}");
+    expect(saved).toMatchObject({ name: "张同学", targetSchool: "武汉大学" });
+    expect(saved).not.toHaveProperty("accessKey");
+  });
+
+  it("recovers from corrupt storage by returning to the gate", async () => {
+    localStorage.setItem(USER_STORAGE_KEY, "not-json");
+    render(<SessionGate><div>主站内容</div></SessionGate>);
+    expect(await screen.findByRole("heading", { name: "开始你的真题之旅" })).toBeInTheDocument();
+    expect(localStorage.getItem(USER_STORAGE_KEY)).toBeNull();
+  });
+
+  it("restores an existing session", async () => {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
+      name: "李同学", currentSchool: "湖南大学", targetSchool: "浙江大学", major: "自动化", examYear: "2027",
+    }));
+    render(<SessionGate><div>主站内容</div></SessionGate>);
+    expect(await screen.findByText("主站内容")).toBeInTheDocument();
+  });
+
+  it("preserves favorites when the user session changes", async () => {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([1, 3]));
+    render(<SessionGate><div>主站内容</div></SessionGate>);
+    await screen.findByRole("heading", { name: "开始你的真题之旅" });
+    await waitFor(() => expect(localStorage.getItem(FAVORITES_STORAGE_KEY)).toBe("[1,3]"));
+  });
+});
