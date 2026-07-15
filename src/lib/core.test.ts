@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterPapers, toggleFavorite, validateAccess } from "./core";
+import { filterPapers, toggleFavorite, validateAccessFields } from "./core";
 import type { AccessFormData, Paper } from "./types";
 
 const validAccess: AccessFormData = {
@@ -16,21 +16,21 @@ const samplePapers: Paper[] = [
   { id: 2, year: "2024", subject: "英语", school: "全国统考", title: "全国硕士研究生 英语一", type: "完整版", pages: 18, views: "8.6k" },
 ];
 
-describe("validateAccess", () => {
-  it("accepts complete information and the demo key", () => {
-    expect(validateAccess(validAccess)).toEqual({ ok: true, message: "" });
+describe("validateAccessFields", () => {
+  it("accepts complete information without deciding whether the key is correct", () => {
+    expect(validateAccessFields({ ...validAccess, accessKey: "server-validated" })).toEqual({ ok: true, message: "" });
   });
 
   it("rejects every blank required field", () => {
     for (const field of Object.keys(validAccess) as (keyof AccessFormData)[]) {
-      expect(validateAccess({ ...validAccess, [field]: " " }).ok).toBe(false);
+      expect(validateAccessFields({ ...validAccess, [field]: " " }).ok).toBe(false);
     }
   });
 
-  it("rejects an incorrect key with a helpful message", () => {
-    expect(validateAccess({ ...validAccess, accessKey: "wrong" })).toEqual({
+  it("rejects an invalid exam year", () => {
+    expect(validateAccessFields({ ...validAccess, examYear: "next-year" })).toEqual({
       ok: false,
-      message: "访问密钥不正确，请使用页面提供的演示密钥",
+      message: "请选择有效的考研年份",
     });
   });
 });

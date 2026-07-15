@@ -1,6 +1,5 @@
 import type { AccessFormData, Paper, PaperFilters, ValidationResult } from "./types";
 
-export const DEMO_ACCESS_KEY = "KY2027";
 export const USER_STORAGE_KEY = "yantiku_user";
 export const FAVORITES_STORAGE_KEY = "yantiku_favorites";
 
@@ -13,15 +12,15 @@ const accessLabels: Record<keyof AccessFormData, string> = {
   accessKey: "访问密钥",
 };
 
-export function validateAccess(data: AccessFormData): ValidationResult {
+export function validateAccessFields(data: AccessFormData): ValidationResult {
   for (const field of Object.keys(accessLabels) as (keyof AccessFormData)[]) {
     if (!String(data[field] ?? "").trim()) {
       return { ok: false, message: `请填写${accessLabels[field]}` };
     }
   }
 
-  if (data.accessKey.trim() !== DEMO_ACCESS_KEY) {
-    return { ok: false, message: "访问密钥不正确，请使用页面提供的演示密钥" };
+  if (!/^\d{4}$/.test(data.examYear.trim())) {
+    return { ok: false, message: "请选择有效的考研年份" };
   }
 
   return { ok: true, message: "" };

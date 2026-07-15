@@ -28,9 +28,9 @@ export function SiteFooter() {
         <div className="footer-about"><a className="brand" href="#home"><span className="brand-mark">研</span><span>研题库</span></a><p>专注于考研历年真题整理与检索，让每一位认真备考的同学更高效地找到所需资料。</p></div>
         <div className="footer-col"><strong>资料导航</strong><a href="#papers">公共课真题</a><a href="#schools">院校专业课</a><a href="#news">备考资讯</a></div>
         <div className="footer-col"><strong>使用帮助</strong><a href="#papers">筛选说明</a><a href="#papers">收藏资料</a><a href="mailto:demo@example.invalid">问题反馈</a></div>
-        <div className="footer-col"><strong>演示说明</strong><span>演示密钥：KY2027</span><span>信息仅保存于当前浏览器</span></div>
+        <div className="footer-col"><strong>隐私说明</strong><span>登记信息由服务端安全保存</span><span>访问密钥不以明文存储</span></div>
       </div>
-      <div className="container footer-bottom"><span>© 2026 研题库 · 静态界面演示</span><span>前端密钥不构成真实安全验证 · 请勿填写敏感个人信息</span></div>
+      <div className="container footer-bottom"><span>© 2026 研题库</span><span>访问密钥验证不等同于完整身份认证 · 请勿填写额外敏感信息</span></div>
     </footer>
   );
 }
