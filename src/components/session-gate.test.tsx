@@ -1,11 +1,13 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { StrictMode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FAVORITES_STORAGE_KEY, USER_STORAGE_KEY } from "@/lib/core";
 import { SessionGate } from "./session-gate";
 
 describe("SessionGate", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
 
   it("shows the access form when no session is stored", async () => {
     render(<SessionGate><div>主站内容</div></SessionGate>);
@@ -13,6 +15,12 @@ describe("SessionGate", () => {
     expect(screen.queryByText("主站内容")).not.toBeInTheDocument();
     expect(screen.queryByText("WELCOME ABOARD")).not.toBeInTheDocument();
     expect(screen.queryByText("KAOYAN PAPER ARCHIVE")).not.toBeInTheDocument();
+  });
+
+  it("finishes restoring when queueMicrotask is unavailable", async () => {
+    vi.stubGlobal("queueMicrotask", undefined);
+    render(<StrictMode><SessionGate><div>主站内容</div></SessionGate></StrictMode>);
+    expect(await screen.findByRole("heading", { name: "开始你的真题之旅" })).toBeInTheDocument();
   });
 
   it("stores user information without the access key and enters the site", async () => {

@@ -50,7 +50,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     }
     const restoredFavorites = readFavorites();
     let cancelled = false;
-    queueMicrotask(() => {
+    Promise.resolve().then(() => {
       if (!cancelled) setSession({ ready: true, user: restoredUser, favorites: restoredFavorites });
     });
     return () => { cancelled = true; };
